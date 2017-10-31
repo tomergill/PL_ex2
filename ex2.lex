@@ -33,13 +33,15 @@
 			}
 	  	}
 	  	
-","		{	*ptr = input();	}
+,[0-9]+	{	*ptr = (char) atoi(yytext + 1);	}
+	  	
+,		{	*ptr = input();	}
 
 "."		{	printf("%c", *ptr);	}
 
 " "|\n	{	/*nothing*/	}
 
-.		{	printf("Unknown command\n"); return 0;	}
+.		{	printf("Unknown command\n"); return 0;	} //unknown character
 
 %%
 
