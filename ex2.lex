@@ -39,6 +39,12 @@
 
 "."		{	printf("%c", *ptr);	}
 
+"["		{	
+			if (!(*ptr))
+				while(input() != ']');
+			else
+				
+
 " "|\n	{	/*nothing*/	}
 
 .		{	printf("Unknown command\n"); return 0;	} //unknown character
