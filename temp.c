@@ -41,7 +41,7 @@ void plus(int n)
 
 int minus(int n)
 {
-    if ((*ptr -= n) > 0)
+    if ((*ptr -= n) < 0)
     {
         printf("Invalid – command\n");
         return 0;
@@ -135,4 +135,56 @@ void startWhile()
     currentElem = whileLinkedList;
     openBrackets++;
     BEGIN(WHILESTATE);
+}
+
+int	loopFunction()
+{
+    if (whileLinkedList == NULL)
+        return 1;
+    currentElem = whileLinkedList;
+
+    while (currentElem != NULL)
+    {
+        switch (currentElem->action)
+        {
+            default:
+                break;
+            case '[':
+                openBrackets++;
+                break;
+            case ']':
+                openBrackets -= 2;
+                if (!(*ptr))
+                    break;
+                int goal = openBrackets + 1;
+                while (currentElem->action != '[' || openBrackets != goal)
+                {
+                    currentElem = currentElem->previous;
+                    if (currentElem->action == '[')
+                        openBrackets++;
+                    else if (currentElem->action == ']')
+                        openBrackets--;
+                }
+                break;
+            case '+':
+                plus(currentElem->value);
+                break;
+            case '-':
+                if (!minus(currentElem->value))
+                    return 0;
+                break;
+            case '>': right();
+                break;
+            case '<':
+                if (!left())
+                    return 0;
+                break;
+            case ',': getChar((char) currentElem->value);
+                break;
+            case '.': print();
+                break;
+        }
+        currentElem = currentElem->next;
+    }
+    return 1;
 }

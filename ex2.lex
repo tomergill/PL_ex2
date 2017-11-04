@@ -27,12 +27,12 @@
 	int     minus(int n);
 	int     left();
 	void    right();
-	void    getASCII(char *ASCIString);
 	void    getChar(char c);
 	void    print();
 	elem*   createElem();
 	void    freeWhileList();
 	void    startWhile();
+	int		loopFunction();
 %}
 
 /*ALIASES*/
@@ -46,6 +46,7 @@ DOT 			"."
 SPACES 			" "|\n
 ALLCHARS 		.
 OPENBRACKET		"["
+CLOSINGBRACKET	"]"
 
 /*STATES*/
 %s WHILESTATE
@@ -54,10 +55,10 @@ OPENBRACKET		"["
 
 %%
 
-{PLUSES}		{	plus(strlen(yytext);	}
+{PLUSES}		{	plus(strlen(yytext));	}
 		
 {MINUSES}		{ 
-					if (!minus(strlen(yytext)) 
+					if (!minus(strlen(yytext)))
 					{
 						return 0;
 					}
@@ -67,13 +68,13 @@ OPENBRACKET		"["
 
 {LEFT}			{	!left() ? return 0;	}
 	  	
-{COMMA_ASCII}	{	getASCII(yytext + 1);	}
+{COMMA_ASCII}	{	getChar((char) atoi(yytext + 1));	}
 	  	
 {COMMA}			{	getChar(input());	}
 
 {DOT}			{	print();	}
 
-OPENBRACKET		{	
+{OPENBRACKET}	{	
 					if (!(*ptr)) 
 						while(input() != ']');
 					else
@@ -85,6 +86,24 @@ OPENBRACKET		{
 
 {ALLCHARS}		{	printf("Unknown command\n"); return 0;	/*unknown character*/ } 
 
+
+<WHILESTATE>{PLUSES}			{	elem *ptr = createElem(); ptr.action = '+'; ptr.value = strlen(yytext);	}
+<WHILESTATE>{MINUSES}			{	elem *ptr = createElem(); ptr.action = '-'; ptr.value = strlen(yytext);	}
+<WHILESTATE>{RIGHT}				{	elem *ptr = createElem(); ptr.action = '>';	}	
+<WHILESTATE>{LEFT} 				{	elem *ptr = createElem(); ptr.action = '<';	}
+<WHILESTATE>{COMMA_ASCII}		{	elem *ptr = createElem(); ptr.action = ','; ptr.value = atoi(yytext + 1);	}
+<WHILESTATE>{COMMA}				{	elem *ptr = createElem(); ptr.action = ','; ptr.value = (int) input();	}
+<WHILESTATE>{DOT}				{	elem *ptr = createElem(); ptr.action = '.';	}
+<WHILESTATE>{OPENBRACKET}		{	startWhile(); }
+<WHILESTATE>{CLOSINGBRACKET}	{	
+									elem *ptr = createElem(); 
+									ptr.action = ']';	
+									if (--openBrackets == 0)
+									{
+										loopFunction();
+										BEGIN(INITIAL);
+									}
+								}
 %%
 
 int main()
@@ -100,7 +119,7 @@ void plus(int n)
 
 int minus(int n)
 {
-    if ((*ptr -= n) > 0)
+    if ((*ptr -= n) < 0)
     {
         printf("\nInvalid – command\n");
         return 0;
@@ -121,11 +140,6 @@ int left()
 void right()
 {
     ptr++;
-}
-
-void getASCII(char *ASCIString)
-{
-    *ptr = (char) atoi(ASCIString);
 }
 
 void getChar(char c)
@@ -150,6 +164,27 @@ elem* createElem()
     ptr->next = NULL;
     ptr->previous = NULL;
     ptr->value = 0;
+
+    if (whileLinkedList == NULL)
+    {
+        whileLinkedList = ptr;
+        currentElem = ptr;
+    }
+    else
+    {
+        if (currentElem == NULL)
+        {
+            currentElem = whileLinkedList;
+        }
+
+        while (currentElem->next != NULL)
+            currentElem = currentElem->next;
+
+        currentElem->next = ptr;
+        ptr->previous = currentElem;
+        currentElem = ptr;
+    }
+
     return ptr;
 }
 
