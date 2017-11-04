@@ -55,6 +55,25 @@ CLOSINGBRACKET	"]"
 
 %%
 
+<WHILESTATE>{PLUSES}			{	elem *ele = createElem(); ele->action = '+'; ele->value = strlen(yytext);	}
+<WHILESTATE>{MINUSES}			{	elem *ele = createElem(); ele->action = '-'; ele->value = strlen(yytext);	}
+<WHILESTATE>{RIGHT}				{	elem *ele = createElem(); ele->action = '>';	}	
+<WHILESTATE>{LEFT} 				{	elem *ele = createElem(); ele->action = '<';	}
+<WHILESTATE>{COMMA_ASCII}		{	elem *ele = createElem(); ele->action = ','; ele->value = atoi(yytext + 1);	}
+<WHILESTATE>{COMMA}				{	elem *ele = createElem(); ele->action = ','; ele->value = (int) input();	}
+<WHILESTATE>{DOT}				{	elem *ele = createElem(); ele->action = '.';	}
+<WHILESTATE>{OPENBRACKET}		{	startWhile(); }
+<WHILESTATE>{CLOSINGBRACKET}	{	
+									elem *ele = createElem(); 
+									ele->action = ']';	
+									if (--openBrackets == 0)
+									{
+										loopFunction();
+										BEGIN(INITIAL);
+									}
+								}
+
+
 {PLUSES}		{	plus(strlen(yytext));	}
 		
 {MINUSES}		{ 
@@ -66,7 +85,10 @@ CLOSINGBRACKET	"]"
   		
 {RIGHT}			{	right();	}
 
-{LEFT}			{	!left() ? return 0;	}
+{LEFT}			{	
+					if (!left()) 
+						return 0;
+				}
 	  	
 {COMMA_ASCII}	{	getChar((char) atoi(yytext + 1));	}
 	  	
@@ -75,35 +97,22 @@ CLOSINGBRACKET	"]"
 {DOT}			{	print();	}
 
 {OPENBRACKET}	{	
+					char c;
 					if (!(*ptr)) 
-						while(input() != ']');
+						while((c = input()) != ']' && openBrackets == 0)
+						{
+							if (c == '[')
+								openBrackets++;
+							else if (c == ']')
+								openBrackets--;
+						}
 					else
 						startWhile();
-					
 				}
 
 {SPACES}		{	/*nothing*/	}
 
 {ALLCHARS}		{	printf("Unknown command\n"); return 0;	/*unknown character*/ } 
-
-
-<WHILESTATE>{PLUSES}			{	elem *ptr = createElem(); ptr.action = '+'; ptr.value = strlen(yytext);	}
-<WHILESTATE>{MINUSES}			{	elem *ptr = createElem(); ptr.action = '-'; ptr.value = strlen(yytext);	}
-<WHILESTATE>{RIGHT}				{	elem *ptr = createElem(); ptr.action = '>';	}	
-<WHILESTATE>{LEFT} 				{	elem *ptr = createElem(); ptr.action = '<';	}
-<WHILESTATE>{COMMA_ASCII}		{	elem *ptr = createElem(); ptr.action = ','; ptr.value = atoi(yytext + 1);	}
-<WHILESTATE>{COMMA}				{	elem *ptr = createElem(); ptr.action = ','; ptr.value = (int) input();	}
-<WHILESTATE>{DOT}				{	elem *ptr = createElem(); ptr.action = '.';	}
-<WHILESTATE>{OPENBRACKET}		{	startWhile(); }
-<WHILESTATE>{CLOSINGBRACKET}	{	
-									elem *ptr = createElem(); 
-									ptr.action = ']';	
-									if (--openBrackets == 0)
-									{
-										loopFunction();
-										BEGIN(INITIAL);
-									}
-								}
 %%
 
 int main()
@@ -154,21 +163,21 @@ void print()
 
 elem* createElem()
 {
-    elem *ptr;
-    if ((ptr = (elem*) malloc(sizeof(elem))) == NULL)
+    elem *ele;
+    if ((ele = (elem*) malloc(sizeof(elem))) == NULL)
     {
         printf("\nmalloc error\n");
         return NULL;
     }
-    ptr->action = '\0';
-    ptr->next = NULL;
-    ptr->previous = NULL;
-    ptr->value = 0;
+    ele->action = 'a';
+    ele->next = NULL;
+    ele->previous = NULL;
+    ele->value = 0;
 
     if (whileLinkedList == NULL)
     {
-        whileLinkedList = ptr;
-        currentElem = ptr;
+        whileLinkedList = ele;
+        currentElem = ele;
     }
     else
     {
@@ -180,12 +189,12 @@ elem* createElem()
         while (currentElem->next != NULL)
             currentElem = currentElem->next;
 
-        currentElem->next = ptr;
-        ptr->previous = currentElem;
-        currentElem = ptr;
+        currentElem->next = ele;
+        ele->previous = currentElem;
+        currentElem = ele;
     }
 
-    return ptr;
+    return ele;
 }
 
 void freeWhileList()
@@ -203,9 +212,74 @@ void startWhile()
     if (!openBrackets && whileLinkedList != NULL)
         freeWhileList();
 
-    whileLinkedList = createElem();
-    whileLinkedList->action = '[';
-    currentElem = whileLinkedList;
+    currentElem = createElem();
+    currentElem->action = '[';
+    if (whileLinkedList == NULL)
+    	whileLinkedList = currentElem;
     openBrackets++;
     BEGIN(WHILESTATE);
+}
+
+int	loopFunction()
+{
+    if (whileLinkedList == NULL)
+        return 1;
+    currentElem = whileLinkedList;
+	
+    while (currentElem != NULL)
+    {
+        switch (currentElem->action)
+        {
+            default:
+                break;
+            case '[':
+                openBrackets++;
+                if (!(*ptr))
+                {
+                	int goal = openBrackets - 1;
+                	while (currentElem->action != ']' || openBrackets != goal)
+		            {
+		                currentElem = currentElem->next;
+		                if (currentElem->action == '[')
+		                    openBrackets++;
+		                else if (currentElem->action == ']')
+		                    openBrackets--;
+		            }
+                }
+                break;
+            case ']':
+                openBrackets -= 2;
+                if (!(*ptr))
+                    break;
+                int goal = openBrackets + 1;
+                while (currentElem->action != '[' || openBrackets != goal)
+                {
+                    currentElem = currentElem->previous;
+                    if (currentElem->action == '[')
+                        openBrackets++;
+                    else if (currentElem->action == ']')
+                        openBrackets--;
+                }
+                break;
+            case '+':
+                plus(currentElem->value);
+                break;
+            case '-':
+                if (!minus(currentElem->value))
+                    return 0;
+                break;
+            case '>': right();
+                break;
+            case '<':
+                if (!left())
+                    return 0;
+                break;
+            case ',': getChar((char) currentElem->value);
+                break;
+            case '.': print();
+                break;
+        }
+        currentElem = currentElem->next;
+    }
+    return 1;
 }
