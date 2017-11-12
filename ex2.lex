@@ -130,7 +130,7 @@ int minus(int n)
 {
     if ((*ptr -= n) < 0)
     {
-        printf("\nInvalid – command\n");
+        printf("Invalid – command\n");
         return 0;
     }
     return 1;
@@ -140,7 +140,7 @@ int left()
 {
     if (--ptr < array)
     {
-        printf("\nIndex Out Of Range\n");
+        printf("Index Out Of Range\n");
         return 0;
     }
     return 1;
@@ -166,7 +166,7 @@ elem* createElem()
     elem *ele;
     if ((ele = (elem*) malloc(sizeof(elem))) == NULL)
     {
-        printf("\nmalloc error\n");
+        printf("malloc error\n");
         return NULL;
     }
     ele->action = 'a';
@@ -281,5 +281,7 @@ int	loopFunction()
         }
         currentElem = currentElem->next;
     }
+    openBrackets=0;
+    freeWhileList();
     return 1;
 }
